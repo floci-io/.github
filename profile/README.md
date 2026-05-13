@@ -56,11 +56,6 @@ LocalStack's community edition [sunset in March 2026](https://blog.localstack.cl
 - **[testcontainers-floci-node](https://github.com/floci-io/testcontainers-floci-node)** — Node.js module.
 - **[testcontainers-floci-go](https://github.com/floci-io/testcontainers-floci-go)** — Go module.
 
-### Quality
-
-- **[floci-compatibility-tests](https://github.com/floci-io/floci-compatibility-tests)** — 1,925 cross-SDK tests covering Java v2, Node.js v3, boto3, Go v2, Rust, AWS CLI, Terraform, OpenTofu, and CDK.
-- **[floci-io.github.io](https://github.com/floci-io/floci-io.github.io)** — the [floci.io](https://floci.io) website source.
-
 ## What makes it different
 
 **Real engines, not mocks.** Lambda, RDS, ElastiCache, ECS, EC2, EKS, MSK, OpenSearch, ECR, and CodeBuild spin up real Docker containers and speak real wire protocols (RESP, JDBC, k8s, IMDS). IAM auth and SigV4 validation work the same as production AWS.
