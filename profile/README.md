@@ -1,6 +1,7 @@
 <div align="center">
+<img  alt="floci-white" src="https://github.com/user-attachments/assets/edfff8b3-926c-471e-9549-77fb90a21b49#gh-dark-mode-only" width="640"/><div align="center">
 
-<img src="https://raw.githubusercontent.com/floci-io/.github/main/floci.svg" alt="Floci" width="640"/>
+<img alt="floci-black" src="https://raw.githubusercontent.com/floci-io/.github/main/floci.svg#gh-light-mode-only" width="640"/>
 
 ### Any cloud. Locally.
 
