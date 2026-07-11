@@ -76,6 +76,7 @@ Cloud Storage, Pub/Sub, Firestore, Datastore, Bigtable, Spanner, and Cloud Funct
 - **[testcontainers-floci-python](https://github.com/floci-io/testcontainers-floci-python)**: Python.
 - **[testcontainers-floci-node](https://github.com/floci-io/testcontainers-floci-node)**: Node.js.
 - **[testcontainers-floci-go](https://github.com/floci-io/testcontainers-floci-go)**: Go.
+- **[testcontainers-floci-dotnet](https://github.com/floci-io/testcontainers-floci-dotnet)**: .NET.
 
 ## What makes it different
 
