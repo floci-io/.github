@@ -50,7 +50,7 @@ Floci fills all of that with one consistent emulator family, and stays MIT-licen
 
 **[github.com/floci-io/floci](https://github.com/floci-io/floci)** · port `4566` · image `floci/floci`
 
-41 services including EC2, ECS, EKS, Lambda, RDS, ElastiCache, MSK, OpenSearch, ECR, CodeBuild, S3, DynamoDB, SQS, SNS, IAM, STS, KMS, Cognito, EventBridge, Step Functions, CloudFormation, API Gateway, and more. 100% SDK compatibility (1,925 / 1,925 tests).
+Dozens of services including EC2, ECS, EKS, Lambda, RDS, ElastiCache, MSK, OpenSearch, ECR, CodeBuild, S3, DynamoDB, SQS, SNS, IAM, STS, KMS, Cognito, EventBridge, Step Functions, CloudFormation, API Gateway, and more — with 100% SDK compatibility against the [compatibility test suite](https://github.com/floci-io/floci-compatibility-tests). See the [repo](https://github.com/floci-io/floci) for the current service list and test counts.
 
 ### ☁️ Floci-az for Azure
 
