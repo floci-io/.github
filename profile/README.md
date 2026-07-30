@@ -5,102 +5,85 @@
 
 ### Any cloud. Locally.
 
-**Light, fluffy, and always free. Zero cost. Zero compromise.**
+**Light, fluffy, and always free. Local cloud emulators for AWS, Azure, GCP, and OCI.**
 
-[![Stars](https://img.shields.io/github/stars/floci-io/floci?style=flat&color=blue)](https://github.com/floci-io/floci/stargazers)
+[![stars floci](https://img.shields.io/github/stars/floci-io/floci?style=flat&color=blue&label=stars%20floci)](https://github.com/floci-io/floci/stargazers)
+[![stars floci-az](https://img.shields.io/github/stars/floci-io/floci-az?style=flat&color=blue&label=stars%20floci-az)](https://github.com/floci-io/floci-az/stargazers)
+[![stars floci-gcp](https://img.shields.io/github/stars/floci-io/floci-gcp?style=flat&color=blue&label=stars%20floci-gcp)](https://github.com/floci-io/floci-gcp/stargazers)
+[![stars floci-oci](https://img.shields.io/github/stars/floci-io/floci-oci?style=flat&color=blue&label=stars%20floci-oci)](https://github.com/floci-io/floci-oci/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/floci-io/floci/blob/main/LICENSE)
 [![Slack](https://img.shields.io/badge/Slack-join%20the%20community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw)
 [![Website](https://img.shields.io/badge/website-floci.io-0ea5e9)](https://floci.io)
 
 </div>
 
-## What is Floci?
+## What is Floci™?
 
-Floci is a family of fast, free, open-source **local cloud emulators** built with Quarkus Native. One container per cloud, one port each, no auth tokens, no feature gates, no telemetry. Ever.
+Floci is a family of fast, free, open-source **local cloud emulators** built with Quarkus
+Native, with one container per cloud, one port each, no auth tokens, no feature gates, no telemetry.
+Around the emulators sits a consistent set of client libraries, tooling, and validation so the
+whole suite feels like one project.
 
-Named after [*cirrocumulus floccus*](https://en.wikipedia.org/wiki/Cirrocumulus_floccus), the cloud formation that looks like popcorn. 🍿
+Named after [*cirrocumulus floccus*](https://en.wikipedia.org/wiki/Cirrocumulus_floccus), the
+cloud formation that looks like popcorn. 🍿
 
 ```bash
 docker run --rm -p 4566:4566 floci/floci:latest        # AWS
 docker run --rm -p 4577:4577 floci/floci-az:latest     # Azure
 docker run --rm -p 4588:4588 floci/floci-gcp:latest    # Google Cloud
+docker run --rm -p 4599:4599 floci/floci-oci:latest    # Oracle Cloud
 ```
 
-That's it. No sign-ups. No API keys.
+No sign-ups. No API keys. Point your existing SDK or CLI at the local endpoint and keep your
+workflows.
 
-## Why this org exists
+## The suite
 
-LocalStack's community edition [sunset in March 2026](https://blog.localstack.cloud/the-road-ahead-for-localstack/), now requiring auth tokens and frozen security updates. Microsoft's Azure emulators are fragmented across Azurite, Cosmos DB Emulator (Windows-only), and Functions Core Tools. Google ships per-service `gcloud beta emulators` that each run on a different port with different config.
+| Category | Repos |
+| --- | --- |
+| **Emulators** | [`floci`](https://github.com/floci-io/floci) (AWS, `:4566`) · [`floci-az`](https://github.com/floci-io/floci-az) (Azure, `:4577`) · [`floci-gcp`](https://github.com/floci-io/floci-gcp) (GCP, `:4588`) · [`floci-oci`](https://github.com/floci-io/floci-oci) (OCI, `:4599`) |
+| **Client libraries** | [`testcontainers-floci`](https://github.com/floci-io/testcontainers-floci) (Java) · [`-python`](https://github.com/floci-io/testcontainers-floci-python) · [`-node`](https://github.com/floci-io/testcontainers-floci-node) · [`-go`](https://github.com/floci-io/testcontainers-floci-go) · [`-dotnet`](https://github.com/floci-io/testcontainers-floci-dotnet) |
+| **Tooling** | [`floci-cli`](https://github.com/floci-io/floci-cli) · [`floci-ui`](https://github.com/floci-io/floci-ui) |
+| **Docs & experimental** | [`floci-io.github.io`](https://github.com/floci-io/floci-io.github.io) · [`floci-duck`](https://github.com/floci-io/floci-duck) |
 
-Floci fills all of that with one consistent emulator family, and stays MIT-licensed forever.
+### The four emulators
 
-| | Floci | LocalStack Community | Azurite + friends | `gcloud` emulators |
-| --- | --- | --- | --- | --- |
-| Auth token | None | Required (since March 2026) | N/A | N/A |
-| Unified endpoint | **One port per cloud** | One port | Per-service | Per-service |
-| Startup time (AWS) | **~24 ms** | ~3.3 s | n/a | n/a |
-| Idle memory (AWS) | **~13 MiB** | ~143 MiB | n/a | n/a |
-| Docker image size | **~90 MB** | ~1.0 GB | varies | varies |
-| License | **MIT** | Restricted | varies | varies |
-| Real Docker engines | ✅ Lambda, RDS, EKS, MSK, … | ❌ | partial | partial |
+- **☁️ AWS** · [`floci`](https://github.com/floci-io/floci) · port `4566` · image `floci/floci`.
+  EC2, ECS, EKS, Lambda, RDS, ElastiCache, MSK, OpenSearch, S3, DynamoDB, SQS, SNS, IAM, STS,
+  KMS, Step Functions, CloudFormation, and more, validated against its
+  [compatibility test suite](https://github.com/floci-io/floci/tree/main/compatibility-tests).
+- **☁️ Azure** · [`floci-az`](https://github.com/floci-io/floci-az) · port `4577` · image
+  `floci/floci-az`. Blob, Queue, Table, Cosmos DB, Functions, App Configuration, Key Vault,
+  Event Hubs, Azure SQL Database, AKS, and Virtual Machines on a single endpoint.
+- **☁️ GCP** · [`floci-gcp`](https://github.com/floci-io/floci-gcp) · port `4588` · image
+  `floci/floci-gcp`. Cloud Storage, Pub/Sub, Firestore, Datastore, Secret Manager, IAM, and
+  Managed Kafka on a single endpoint.
+- **☁️ OCI** · [`floci-oci`](https://github.com/floci-io/floci-oci) · port `4599` · image
+  `floci/floci-oci`. Identity, Object Storage, Queue, Streaming, Vault + KMS, Secrets, and
+  Functions on a single endpoint.
 
-## Clouds
+## Always free, no feature gates, MIT forever
 
-### ☁️ Floci for AWS
+Every emulated service is available to every user, always: no auth tokens, no paid unlocks, no
+"community edition" sunset. The emulators are MIT-licensed and stay that way. Fork them, embed
+them, ship them.
 
-**[github.com/floci-io/floci](https://github.com/floci-io/floci)** · port `4566` · image `floci/floci`
+## Links
 
-Dozens of services including EC2, ECS, EKS, Lambda, RDS, ElastiCache, MSK, OpenSearch, ECR, CodeBuild, S3, DynamoDB, SQS, SNS, IAM, STS, KMS, Cognito, EventBridge, Step Functions, CloudFormation, API Gateway, and more — with 100% SDK compatibility against the [compatibility test suite](https://github.com/floci-io/floci-compatibility-tests). See the [repo](https://github.com/floci-io/floci) for the current service list and test counts.
+**[Website](https://floci.io)** ·
+**[Documentation](https://floci.io)** ·
+**[Slack](https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw)** ·
+**[Discussions](https://github.com/orgs/floci-io/discussions)** ·
+**[Governance](https://github.com/floci-io/.github/blob/main/GOVERNANCE.md)** ·
+**[Trademark](https://github.com/floci-io/.github/blob/main/TRADEMARK.md)**
 
-### ☁️ Floci-az for Azure
-
-**[github.com/floci-io/floci-az](https://github.com/floci-io/floci-az)** · port `4577` · image `floci/floci-az`
-
-Blob, Queue, Table, Cosmos DB, Functions, App Configuration, Key Vault, and Event Hubs on a single endpoint. Drop-in alternative to running Azurite, Cosmos DB Emulator, and Functions Core Tools side by side.
-
-### ☁️ Floci-gcp for Google Cloud
-
-**[github.com/floci-io/floci-gcp](https://github.com/floci-io/floci-gcp)** · port `4588` · image `floci/floci-gcp`
-
-Cloud Storage, Pub/Sub, Firestore, Datastore, Bigtable, Spanner, and Cloud Functions on a single endpoint. One container instead of seven separate `gcloud beta emulators` processes.
-
-## Supporting projects
-
-### Sidecars
-
-- **[floci-duck](https://github.com/floci-io/floci-duck)**: a DuckDB-backed query sidecar that powers Athena and Firehose.
-
-### Testcontainers modules
-
-- **[testcontainers-floci](https://github.com/floci-io/testcontainers-floci)**: Java, published to Maven Central as [`io.floci:testcontainers-floci`](https://central.sonatype.com/artifact/io.floci/testcontainers-floci).
-- **[testcontainers-floci-python](https://github.com/floci-io/testcontainers-floci-python)**: Python.
-- **[testcontainers-floci-node](https://github.com/floci-io/testcontainers-floci-node)**: Node.js.
-- **[testcontainers-floci-go](https://github.com/floci-io/testcontainers-floci-go)**: Go.
-- **[testcontainers-floci-dotnet](https://github.com/floci-io/testcontainers-floci-dotnet)**: .NET.
-
-## What makes it different
-
-**Real engines, not mocks.** Lambda, RDS, ElastiCache, ECS, EC2, EKS, MSK, OpenSearch, ECR, and CodeBuild spin up real Docker containers and speak real wire protocols (RESP, JDBC, k8s, IMDS). IAM auth and SigV4 validation work the same as production AWS. The same philosophy carries over to Azure Functions and Cloud Functions in the sibling emulators.
-
-**Drop-in replacement.** Same ports. Same wire protocols. Switch from LocalStack, Azurite, or `gcloud emulators` by changing your endpoint URL with zero application code changes.
-
-**Consistent across clouds.** Same Quarkus Native foundation, same storage architecture (memory / hybrid / persistent / WAL), same Testcontainers patterns. Learn one Floci, you've learned them all.
-
-## Get involved
-
-- 💬 **[Join Slack](https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw)** for questions, feedback, and popcorn-fueled brainstorms
-- 🗣️ **[GitHub Discussions](https://github.com/orgs/floci-io/discussions)** for feature ideas, design tradeoffs, and half-baked thoughts
-- 🐛 Open an issue on the cloud you're using: [AWS](https://github.com/floci-io/floci/issues) · [Azure](https://github.com/floci-io/floci-az/issues) · [GCP](https://github.com/floci-io/floci-gcp/issues)
-- 📖 **[Read the docs](https://floci.io/floci/)** for quick start guides, configuration, and per-service details
-
-## License
-
-Everything in this org is **MIT licensed**. Fork it, embed it, ship it. No "community edition" sunset. No enterprise feature flags.
+---
 
 <div align="center">
 
 *Built with Quarkus + GraalVM Mandrel · Made for developers who ship.*
 
-**[floci.io](https://floci.io)** · **[Documentation](https://floci.io/floci/)** · **[Blog](https://hectorvent.dev/posts/introducing-floci/)**
+Floci™ is a trademark of Hector Ventura. Code is MIT-licensed; see
+[TRADEMARK.md](https://github.com/floci-io/.github/blob/main/TRADEMARK.md) for name and logo use.
 
 </div>

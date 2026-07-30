@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a defect in a Floci emulator or tool
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in the details below so we can
+        reproduce it quickly. For security vulnerabilities, **do not** use this form; follow
+        the [security policy](https://github.com/floci-io/.github/blob/main/SECURITY.md).
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which Floci product is affected?
+      options:
+        - floci (AWS)
+        - floci-az (Azure)
+        - floci-gcp (GCP)
+        - floci-oci (OCI)
+        - testcontainers-floci (Java)
+        - testcontainers-floci-python
+        - testcontainers-floci-node
+        - testcontainers-floci-go
+        - floci-cli
+        - floci-ui
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / image tag
+      description: e.g. `floci/floci:latest`, a release tag, or a commit SHA.
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and the impact.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps, SDK/CLI calls, or a code snippet that reproduces the issue.
+      placeholder: |
+        1. Start the emulator with `docker run ...`
+        2. Call `...`
+        3. Observe `...`
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen (e.g. how real AWS/Azure/GCP/OCI behaves)?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, SDK/CLI and version, container runtime.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Relevant logs or error output. This will be rendered as code, so no backticks needed.
+      render: shell
+    validations:
+      required: false

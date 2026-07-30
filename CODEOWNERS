@@ -1,0 +1,12 @@
+# Default: the Lead owns this org-level repo
+*                       @hectorvent
+
+# Reserved to the Lead: require Lead review regardless of area
+/LICENSE                @hectorvent
+/GOVERNANCE.md          @hectorvent
+/TRADEMARK.md           @hectorvent
+/CODEOWNERS             @hectorvent
+/.releaserc*            @hectorvent
+/.github/workflows/     @hectorvent
+/MAINTAINERS.md         @hectorvent
+**/*_banner.svg         @hectorvent

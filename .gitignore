@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Local notes / scratch files (not meant to be committed)
+local/
+TEMPORAL.md
+
+## IA internal
+.claude
+
+# Editors
+.vscode
+*.swp
+*~
+.idea/

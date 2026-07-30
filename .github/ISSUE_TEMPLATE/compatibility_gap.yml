@@ -1,0 +1,68 @@
+name: Compatibility gap
+description: Report an SDK, CLI, or service operation that doesn't match the real cloud
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Floci aims for drop-in compatibility with the real cloud SDKs and APIs. Use this form
+        when an operation is missing, or behaves differently from the real service.
+  - type: dropdown
+    id: cloud
+    attributes:
+      label: Cloud
+      options:
+        - floci (AWS)
+        - floci-az (Azure)
+        - floci-gcp (GCP)
+        - floci-oci (OCI)
+    validations:
+      required: true
+  - type: input
+    id: service
+    attributes:
+      label: Service
+      description: e.g. S3, DynamoDB, Blob Storage, Pub/Sub.
+    validations:
+      required: true
+  - type: input
+    id: operation
+    attributes:
+      label: Operation / API call
+      description: The specific API action or SDK method, e.g. `PutObject`, `CreateQueue`, `publish`.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of gap
+      options:
+        - Operation not implemented
+        - Wrong response shape / fields
+        - Wrong error code or message
+        - Different behavior from real cloud
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: client
+    attributes:
+      label: Client used
+      description: SDK/CLI/IaC tool and version (e.g. boto3 1.x, AWS CLI v2, aws-sdk-java 2.x, Terraform).
+    validations:
+      required: true
+  - type: textarea
+    id: actual-vs-expected
+    attributes:
+      label: Actual vs. expected behavior
+      description: What Floci returned, and what the real cloud returns. Include request/response if possible.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Minimal snippet or commands to reproduce against a local Floci.
+    validations:
+      required: false

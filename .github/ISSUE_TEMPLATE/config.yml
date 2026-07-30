@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Slack community
+    url: https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw
+    about: Quick questions and real-time chat with the community.
+  - name: 🗣️ GitHub Discussions
+    url: https://github.com/orgs/floci-io/discussions
+    about: Feature ideas, design tradeoffs, and open-ended questions.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/floci-io/.github/blob/main/SECURITY.md
+    about: Please report security issues privately. Do not open a public issue.
