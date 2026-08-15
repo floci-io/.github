@@ -60,6 +60,31 @@ sustained, high-quality contribution in an area. The path is:
 New Maintainers are scoped to a **specific repository or service area**, such as the
 Azure emulator or the Java Testcontainers module, not the organization as a whole.
 
+## Who maintains what
+
+Each repository's own `MAINTAINERS.md` is authoritative. This table is a convenience index so
+"who owns X" can be answered without walking every repository.
+
+| Area | Repository | Maintainers |
+|---|---|---|
+| AWS emulator | `floci` | @hectorvent, @pgermosen |
+| Azure emulator | `floci-az` | @hectorvent, @fredpena |
+| GCP emulator | `floci-gcp` | @hectorvent |
+| OCI emulator | `floci-oci` | @hectorvent, @gioandtonic |
+| Web console | `floci-ui` | @fredpena, @hectorvent |
+| CLI | `floci-cli` | @hectorvent |
+| Testcontainers, Java | `testcontainers-floci` | @cfranzen, @hectorvent |
+| Testcontainers, .NET | `testcontainers-floci-dotnet` | @hughesjs, @hectorvent |
+| Testcontainers, Go | `testcontainers-floci-go` | @hectorvent |
+| Testcontainers, Node | `testcontainers-floci-node` | @hectorvent |
+| Testcontainers, Python | `testcontainers-floci-python` | @hectorvent |
+| DuckDB executor sidecar | `floci-duck` | @hectorvent |
+| Community projects | `floci-labs` | @hectorvent |
+| Website | `floci-io.github.io` | @hectorvent |
+| Org-level community health files | `.github` | @hectorvent |
+
+Areas showing one name are areas looking for a second. See `CONTRIBUTING.md` and the path above.
+
 ## Stepping down and inactivity
 
 Maintainers may step down at any time. Maintainers who are inactive for an extended period may
