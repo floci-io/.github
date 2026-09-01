@@ -73,7 +73,7 @@ them, ship them.
 Stable releases ship on the **1st and 3rd Tuesday of each month**, across all four emulators.
 Between trains, the `nightly` tag on each image (`floci/floci`, `floci/floci-az`,
 `floci/floci-gcp`, `floci/floci-oci`) tracks `main`, so every merged fix is available the next
-day, with immutable `nightly-mmddyyyy` tags when you need a build you can pin.
+day, and dated `nightly-mmddyyyy` tags let you pin a specific night's build.
 
 Versions come from Conventional Commits by way of semantic-release, and every `CHANGELOG.md` is
 generated rather than written by hand.
