@@ -23,10 +23,20 @@ This appends a `Signed-off-by: Your Name <your@email>` trailer using your config
 identity. If you forget, you can amend the most recent commit with `git commit --amend -s`, or
 sign off a range during an interactive rebase.
 
-> **TODO(lead):** If you decide to use a full CLA instead of (or in addition to) the DCO, swap
-> this section for the CLA bot instructions. The DCO is the lighter-weight default; a CLA gives
-> stronger relicensing flexibility for the commercial path. **This is a Lead decision; do not
-> pick one autonomously.**
+### Why the DCO and not a CLA
+
+Floci is built by the community, for the community, and the DCO is how it stays that way. There
+is no agreement to sign and no rights to hand over. You certify that the work is yours to give,
+you keep the copyright in it, and it reaches everyone else on the same MIT terms it arrived
+under.
+
+A CLA would ask every contributor to grant something extra to whoever holds the project. Floci
+does not ask for that. The Lead Maintainer signs off the same way a first-time contributor
+does, and holds no rights over your work that you do not hold over theirs. Code released under
+MIT stays under MIT: free to use, fork, and build on, for anyone, permanently.
+
+Changes to this policy are reserved to the Lead Maintainer under
+[GOVERNANCE.md](./GOVERNANCE.md).
 
 ## Commit messages
 
