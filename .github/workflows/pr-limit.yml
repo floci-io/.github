@@ -1,0 +1,224 @@
+name: PR Limit
+
+# Reusable open-PR limit for every floci-io repository (floci-loft decision 0020).
+#
+# Policy: contributors keep at most 2 open, non-draft pull requests per repository.
+#   - 3rd and 4th open PR: add the `over-pr-limit` label and post a reminder once.
+#   - 5th and later: when `enforce` is true, label, post the closing notice and close
+#     the PR (the branch is never touched); when false, label and post a heads-up.
+# Exempt: bot accounts, OWNER/MEMBER/COLLABORATOR, and anyone with write, maintain or
+# admin permission on the repository (private org members show up as CONTRIBUTOR).
+# Drafts never count; un-drafting (`ready_for_review`) re-evaluates the PR.
+#
+# Counting: on `opened` only the author's older PRs (lower number) count, so opening
+# several at once keeps the oldest open. On `reopened`, `ready_for_review` and manual
+# runs every other open non-draft PR counts, so neither can get around the limit.
+#
+# The limits and the wording below say "2" and "4" literally: change them together.
+# Phase 2 of decision 0020 (2026-10-08) flips the `enforce` default to true here; the
+# per-repository callers never pass it.
+#
+# Callers run on `pull_request_target` and never check out PR code: this workflow only
+# calls the GitHub API, so the elevated token is not exposed to the PR's contents.
+
+on:
+  workflow_call:
+    inputs:
+      pr-number:
+        description: 'Pull request number to evaluate'
+        required: true
+        type: string
+      dry-run:
+        description: 'Log the decision without labelling, commenting or closing'
+        required: false
+        type: boolean
+        default: false
+      enforce:
+        description: 'Close PRs beyond the close limit (phase 2 of decision 0020)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  ADVISORY_LIMIT: 2
+  CLOSE_LIMIT: 4
+  ENFORCE_DATE: '2026-10-08'
+  LABEL: over-pr-limit
+
+jobs:
+  evaluate:
+    name: Check author open-PR count
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Evaluate and act
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr-number }}
+          DRY_RUN: ${{ inputs.dry-run }}
+          ENFORCE: ${{ inputs.enforce }}
+          EVENT_ACTION: ${{ github.event_name == 'pull_request_target' && github.event.action || 'manual' }}
+        run: |
+          set -euo pipefail
+
+          run() {
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "[dry-run] $*"
+            else
+              "$@"
+            fi
+          }
+
+          PR_JSON=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+          AUTHOR=$(jq -r '.user.login' <<<"$PR_JSON")
+          AUTHOR_TYPE=$(jq -r '.user.type' <<<"$PR_JSON")
+          ASSOCIATION=$(jq -r '.author_association' <<<"$PR_JSON")
+          IS_DRAFT=$(jq -r '.draft' <<<"$PR_JSON")
+          STATE=$(jq -r '.state' <<<"$PR_JSON")
+          echo "PR #$PR_NUMBER by $AUTHOR ($AUTHOR_TYPE, $ASSOCIATION), draft=$IS_DRAFT, state=$STATE, event=$EVENT_ACTION, enforce=$ENFORCE, dry-run=$DRY_RUN"
+
+          if [ "$STATE" != "open" ]; then
+            echo "PR is not open; nothing to do."
+            exit 0
+          fi
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "Draft PRs do not count against the limit; nothing to do."
+            exit 0
+          fi
+          if [ "$AUTHOR_TYPE" = "Bot" ]; then
+            echo "Bot author; exempt."
+            exit 0
+          fi
+          case "$ASSOCIATION" in
+            OWNER|MEMBER|COLLABORATOR)
+              echo "Maintainer ($ASSOCIATION); exempt."
+              exit 0
+              ;;
+          esac
+          # A private org member is reported as CONTRIBUTOR, so also check the actual
+          # repository permission. If the token cannot read it, fall back to the
+          # association check above.
+          PERMISSION=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq '.permission' 2>/dev/null || echo unknown)
+          case "$PERMISSION" in
+            admin|maintain|write)
+              echo "Author has $PERMISSION permission; exempt."
+              exit 0
+              ;;
+          esac
+
+          # Live list endpoint, not the search API: search indexing lags and can miss
+          # the PR that was just opened.
+          OTHERS=$(gh pr list --repo "$REPO" --author "$AUTHOR" --state open --limit 200 \
+                     --json number,isDraft \
+                     --jq "[.[] | select(.isDraft | not) | select(.number != $PR_NUMBER)]")
+          if [ "$EVENT_ACTION" = "opened" ]; then
+            COUNT_OTHERS=$(jq "[.[] | select(.number < $PR_NUMBER)] | length" <<<"$OTHERS")
+          else
+            COUNT_OTHERS=$(jq 'length' <<<"$OTHERS")
+          fi
+          POSITION=$((COUNT_OTHERS + 1))
+          TOTAL=$(( $(jq 'length' <<<"$OTHERS") + 1 ))
+          echo "Position $POSITION (open non-draft PRs by $AUTHOR: $TOTAL); advisory above $ADVISORY_LIMIT, close above $CLOSE_LIMIT."
+
+          if [ "$POSITION" -le "$ADVISORY_LIMIT" ]; then
+            run gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$LABEL" > /dev/null 2>&1 || true
+            echo "Within the limit."
+            exit 0
+          fi
+
+          COMMENTS=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[].body')
+          has_marker() { grep -qF "$1" <<<"$COMMENTS"; }
+
+          # GitHub renders a single newline in a comment as a hard line break, so
+          # every paragraph is one line.
+          advisory_body() {
+            cat <<'EOF'
+          <!-- pr-limit-notice -->
+          👋 Hi @{{author}}, thank you for your contribution to the project!
+
+          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label as a reminder.
+
+          This pull request stays open. Starting **{{date}}**, pull requests opened beyond your 4th will be closed automatically.
+
+          **Next steps:**
+          1. Focus with maintainers on your other open pull requests to get them reviewed and merged.
+          2. If some of them are work in progress, convert them to drafts: drafts do not count against the limit.
+
+          Thank you for helping keep the review queue healthy! 🚀
+          EOF
+          }
+
+          headsup_body() {
+            cat <<'EOF'
+          <!-- pr-limit-notice -->
+          👋 Hi @{{author}}, thank you for your contribution to the project!
+
+          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label.
+
+          **Heads up:** starting **{{date}}**, a pull request like this one, opened while you already have 4 or more open, will be closed automatically. This one stays open for now.
+
+          **Next steps:**
+          1. Focus with maintainers on your other open pull requests to get them reviewed and merged.
+          2. Convert work-in-progress pull requests to drafts: drafts do not count against the limit.
+
+          Thank you for helping keep the review queue healthy! 🚀
+          EOF
+          }
+
+          closing_body() {
+            cat <<'EOF'
+          <!-- pr-limit-closed -->
+          👋 Hi @{{author}}, thank you for your contribution to the project!
+
+          To help our maintainers give thorough and timely reviews to everyone, our policy limits contributors to **2 open pull requests** at a time, and pull requests beyond the 4th are closed automatically. You currently have **{{count}}** open pull requests in this repository.
+
+          We have temporarily closed this pull request to keep the review queue balanced. Don't worry, your branch and commits are completely safe!
+
+          **Next steps:**
+          1. Focus with maintainers on your currently open pull requests to get them reviewed and merged.
+          2. Once one of your existing pull requests is merged or closed, simply reopen this one (or comment, and we will reopen it for you).
+
+          Thank you for your understanding and for helping keep the review queue healthy! 🚀
+          EOF
+          }
+
+          render() {
+            local text
+            text=$("$1")
+            text=${text//\{\{author\}\}/$AUTHOR}
+            text=${text//\{\{count\}\}/$TOTAL}
+            text=${text//\{\{date\}\}/$ENFORCE_DATE}
+            printf '%s\n' "$text"
+          }
+
+          run gh label create "$LABEL" --repo "$REPO" --force --color fbca04 \
+            --description "Author has more than $ADVISORY_LIMIT open pull requests (see CONTRIBUTING.md)"
+          run gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$LABEL"
+
+          if [ "$POSITION" -gt "$CLOSE_LIMIT" ] && [ "$ENFORCE" = "true" ]; then
+            if has_marker 'pr-limit-closed'; then
+              echo "Closing notice already posted; closing without a new comment."
+            else
+              BODY=$(render closing_body)
+              run gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
+            fi
+            run gh pr close "$PR_NUMBER" --repo "$REPO"
+            echo "Closed: position $POSITION is above $CLOSE_LIMIT."
+            exit 0
+          fi
+
+          if has_marker 'pr-limit-notice'; then
+            echo "Reminder already posted; skipping comment."
+            exit 0
+          fi
+          if [ "$POSITION" -gt "$CLOSE_LIMIT" ]; then
+            BODY=$(render headsup_body)
+          else
+            BODY=$(render advisory_body)
+          fi
+          run gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
+          echo "Reminder posted."
