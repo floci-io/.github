@@ -13,6 +13,8 @@ name: PR Limit
 # Counting: on `opened` only the author's older PRs (lower number) count, so opening
 # several at once keeps the oldest open. On `reopened`, `ready_for_review` and manual
 # runs every other open non-draft PR counts, so neither can get around the limit.
+# On `closed` and `converted_to_draft` the author's remaining PRs are reconciled: the
+# label is removed from drafts, and from every PR once they are back within the limit.
 #
 # The limits and the wording below say "2" and "4" literally: change them together.
 # Phase 2 of decision 0020 (2026-10-08) flips the `enforce` default to true here; the
@@ -81,14 +83,6 @@ jobs:
           STATE=$(jq -r '.state' <<<"$PR_JSON")
           echo "PR #$PR_NUMBER by $AUTHOR ($AUTHOR_TYPE, $ASSOCIATION), draft=$IS_DRAFT, state=$STATE, event=$EVENT_ACTION, enforce=$ENFORCE, dry-run=$DRY_RUN"
 
-          if [ "$STATE" != "open" ]; then
-            echo "PR is not open; nothing to do."
-            exit 0
-          fi
-          if [ "$IS_DRAFT" = "true" ]; then
-            echo "Draft PRs do not count against the limit; nothing to do."
-            exit 0
-          fi
           if [ "$AUTHOR_TYPE" = "Bot" ]; then
             echo "Bot author; exempt."
             exit 0
@@ -109,6 +103,31 @@ jobs:
               exit 0
               ;;
           esac
+
+          # A PR closing or turning into a draft can bring the author back within the
+          # limit. Reconcile only removes stale labels: it never comments or closes.
+          if [ "$EVENT_ACTION" = "closed" ] || [ "$EVENT_ACTION" = "converted_to_draft" ]; then
+            OPEN=$(gh pr list --repo "$REPO" --author "$AUTHOR" --state open --limit 200 \
+                     --json number,isDraft,labels)
+            COUNTED=$(jq '[.[] | select(.isDraft | not)] | length' <<<"$OPEN")
+            echo "Reconcile after $EVENT_ACTION: $AUTHOR has $COUNTED open non-draft PR(s)."
+            for number in $(jq -r --arg label "$LABEL" --argjson counted "$COUNTED" --argjson limit "$ADVISORY_LIMIT" \
+                              '.[] | select(any(.labels[]; .name == $label))
+                                   | select(.isDraft or $counted <= $limit) | .number' <<<"$OPEN"); do
+              run gh api -X DELETE "repos/$REPO/issues/$number/labels/$LABEL" > /dev/null 2>&1 || true
+              echo "Removed the stale $LABEL label from #$number."
+            done
+            exit 0
+          fi
+
+          if [ "$STATE" != "open" ]; then
+            echo "PR is not open; nothing to do."
+            exit 0
+          fi
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "Draft PRs do not count against the limit; nothing to do."
+            exit 0
+          fi
 
           # Live list endpoint, not the search API: search indexing lags and can miss
           # the PR that was just opened.
@@ -140,7 +159,7 @@ jobs:
           <!-- pr-limit-notice -->
           👋 Hi @{{author}}, thank you for your contribution to the project!
 
-          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label as a reminder.
+          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open, non-draft pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label as a reminder.
 
           This pull request stays open. Starting **{{date}}**, pull requests opened beyond your 4th will be closed automatically.
 
@@ -157,7 +176,7 @@ jobs:
           <!-- pr-limit-notice -->
           👋 Hi @{{author}}, thank you for your contribution to the project!
 
-          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label.
+          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open, non-draft pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label.
 
           **Heads up:** starting **{{date}}**, a pull request like this one, opened while you already have 4 or more open, will be closed automatically. This one stays open for now.
 
@@ -174,7 +193,7 @@ jobs:
           <!-- pr-limit-closed -->
           👋 Hi @{{author}}, thank you for your contribution to the project!
 
-          To help our maintainers give thorough and timely reviews to everyone, our policy limits contributors to **2 open pull requests** at a time, and pull requests beyond the 4th are closed automatically. You currently have **{{count}}** open pull requests in this repository.
+          To help our maintainers give thorough and timely reviews to everyone, our policy limits contributors to **2 open, non-draft pull requests** at a time, and pull requests beyond the 4th are closed automatically. You currently have **{{count}}** open pull requests in this repository.
 
           We have temporarily closed this pull request to keep the review queue balanced. Don't worry, your branch and commits are completely safe!
 
