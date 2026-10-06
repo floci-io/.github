@@ -17,8 +17,8 @@ name: PR Limit
 # label is removed from drafts, and from every PR once they are back within the limit.
 #
 # The limits and the wording below say "2" and "4" literally: change them together.
-# Phase 2 of decision 0020 (2026-10-08) flips the `enforce` default to true here; the
-# per-repository callers never pass it.
+# Phase 2 of decision 0020 (moved up from 2026-10-08 to 2026-10-05) set the `enforce`
+# default to true here; the per-repository callers never pass it.
 #
 # Callers run on `pull_request_target` and never check out PR code: this workflow only
 # calls the GitHub API, so the elevated token is not exposed to the PR's contents.
@@ -39,12 +39,12 @@ on:
         description: 'Close PRs beyond the close limit (phase 2 of decision 0020)'
         required: false
         type: boolean
-        default: false
+        default: true
 
 env:
   ADVISORY_LIMIT: 2
   CLOSE_LIMIT: 4
-  ENFORCE_DATE: '2026-10-08'
+  ENFORCE_DATE: '2026-10-05'
   LABEL: over-pr-limit
 
 jobs:
