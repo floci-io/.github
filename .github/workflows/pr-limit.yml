@@ -1,27 +1,34 @@
 name: PR Limit
 
-# Reusable open-PR limit for every floci-io repository (floci-loft decision 0020).
+# Reusable open-PR limits for every floci-io repository (floci-loft decisions 0020
+# and 0021).
 #
-# Policy: contributors keep at most 2 open, non-draft pull requests per repository.
-#   - 3rd and 4th open PR: add the `over-pr-limit` label and post a reminder once.
-#   - 5th and later: when `enforce` is true, label, post the closing notice and close
-#     the PR (the branch is never touched); when false, label and post a heads-up.
+# Policy, per author and per repository, both hard limits:
+#   - at most 2 pull requests ready for review (open, non-draft);
+#   - at most 4 open pull requests in total, drafts included.
+# A PR opened or reopened while the author already has 4 open is closed (the branch
+# is never touched). A PR that would be the author's 3rd ready for review is turned
+# back into a draft, so it keeps its place within the total of 4.
 # Exempt: bot accounts, OWNER/MEMBER/COLLABORATOR, and anyone with write, maintain or
 # admin permission on the repository (private org members show up as CONTRIBUTOR).
-# Drafts never count; un-drafting (`ready_for_review`) re-evaluates the PR.
 #
 # Counting: on `opened` only the author's older PRs (lower number) count, so opening
-# several at once keeps the oldest open. On `reopened`, `ready_for_review` and manual
-# runs every other open non-draft PR counts, so neither can get around the limit.
+# several at once keeps the oldest. On `reopened`, `ready_for_review` and manual runs
+# every other open PR counts, so neither can get around a limit. `converted_to_draft`
+# never acts: it only lowers the ready count.
 # On `closed` and `converted_to_draft` the author's remaining PRs are reconciled: the
-# label is removed from drafts, and from every PR once they are back within the limit.
+# legacy `over-pr-limit` label (no longer added) is removed once they are within the
+# ready limit.
 #
 # The limits and the wording below say "2" and "4" literally: change them together.
-# Phase 2 of decision 0020 (moved up from 2026-10-08 to 2026-10-05) set the `enforce`
-# default to true here; the per-repository callers never pass it.
+# `enforce-caps` is the single switch; with it off the workflow only logs decisions.
+# The per-repository callers never pass it.
 #
 # Callers run on `pull_request_target` and never check out PR code: this workflow only
 # calls the GitHub API, so the elevated token is not exposed to the PR's contents.
+# `contents: write` is needed only because the convertPullRequestToDraft mutation
+# refuses the token without it (tested 2026-10-07). It makes the no-checkout rule
+# load-bearing: never add a checkout of the PR head to this workflow or its callers.
 
 on:
   workflow_call:
@@ -31,20 +38,19 @@ on:
         required: true
         type: string
       dry-run:
-        description: 'Log the decision without labelling, commenting or closing'
+        description: 'Log the decision without commenting, converting or closing'
         required: false
         type: boolean
         default: false
-      enforce:
-        description: 'Close PRs beyond the close limit (phase 2 of decision 0020)'
+      enforce-caps:
+        description: 'Act on the limits (floci-loft decision 0021); false only logs'
         required: false
         type: boolean
         default: true
 
 env:
-  ADVISORY_LIMIT: 2
-  CLOSE_LIMIT: 4
-  ENFORCE_DATE: '2026-10-05'
+  READY_LIMIT: 2
+  TOTAL_LIMIT: 4
   LABEL: over-pr-limit
 
 jobs:
@@ -53,6 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      contents: write
       issues: write
       pull-requests: write
     steps:
@@ -62,14 +69,14 @@ jobs:
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ inputs.pr-number }}
           DRY_RUN: ${{ inputs.dry-run }}
-          ENFORCE: ${{ inputs.enforce }}
+          ENFORCE: ${{ inputs.enforce-caps }}
           EVENT_ACTION: ${{ github.event_name == 'pull_request_target' && github.event.action || 'manual' }}
         run: |
           set -euo pipefail
 
           run() {
-            if [ "$DRY_RUN" = "true" ]; then
-              echo "[dry-run] $*"
+            if [ "$DRY_RUN" = "true" ] || [ "$ENFORCE" != "true" ]; then
+              echo "[log-only] $*"
             else
               "$@"
             fi
@@ -81,7 +88,7 @@ jobs:
           ASSOCIATION=$(jq -r '.author_association' <<<"$PR_JSON")
           IS_DRAFT=$(jq -r '.draft' <<<"$PR_JSON")
           STATE=$(jq -r '.state' <<<"$PR_JSON")
-          echo "PR #$PR_NUMBER by $AUTHOR ($AUTHOR_TYPE, $ASSOCIATION), draft=$IS_DRAFT, state=$STATE, event=$EVENT_ACTION, enforce=$ENFORCE, dry-run=$DRY_RUN"
+          echo "PR #$PR_NUMBER by $AUTHOR ($AUTHOR_TYPE, $ASSOCIATION), draft=$IS_DRAFT, state=$STATE, event=$EVENT_ACTION, enforce-caps=$ENFORCE, dry-run=$DRY_RUN"
 
           if [ "$AUTHOR_TYPE" = "Bot" ]; then
             echo "Bot author; exempt."
@@ -104,18 +111,22 @@ jobs:
               ;;
           esac
 
+          # Live list endpoint, not the search API: search indexing lags and can miss
+          # the PR that was just opened.
+          OPEN=$(gh pr list --repo "$REPO" --author "$AUTHOR" --state open --limit 200 \
+                   --json number,isDraft,labels)
+
           # A PR closing or turning into a draft can bring the author back within the
-          # limit. Reconcile only removes stale labels: it never comments or closes.
+          # ready limit. Reconcile only removes the legacy label: it never comments,
+          # converts or closes.
           if [ "$EVENT_ACTION" = "closed" ] || [ "$EVENT_ACTION" = "converted_to_draft" ]; then
-            OPEN=$(gh pr list --repo "$REPO" --author "$AUTHOR" --state open --limit 200 \
-                     --json number,isDraft,labels)
-            COUNTED=$(jq '[.[] | select(.isDraft | not)] | length' <<<"$OPEN")
-            echo "Reconcile after $EVENT_ACTION: $AUTHOR has $COUNTED open non-draft PR(s)."
-            for number in $(jq -r --arg label "$LABEL" --argjson counted "$COUNTED" --argjson limit "$ADVISORY_LIMIT" \
+            READY=$(jq '[.[] | select(.isDraft | not)] | length' <<<"$OPEN")
+            echo "Reconcile after $EVENT_ACTION: $AUTHOR has $READY open non-draft PR(s)."
+            for number in $(jq -r --arg label "$LABEL" --argjson ready "$READY" --argjson limit "$READY_LIMIT" \
                               '.[] | select(any(.labels[]; .name == $label))
-                                   | select(.isDraft or $counted <= $limit) | .number' <<<"$OPEN"); do
+                                   | select(.isDraft or $ready <= $limit) | .number' <<<"$OPEN"); do
               run gh api -X DELETE "repos/$REPO/issues/$number/labels/$LABEL" > /dev/null 2>&1 || true
-              echo "Removed the stale $LABEL label from #$number."
+              echo "Removed the legacy $LABEL label from #$number."
             done
             exit 0
           fi
@@ -124,29 +135,12 @@ jobs:
             echo "PR is not open; nothing to do."
             exit 0
           fi
-          if [ "$IS_DRAFT" = "true" ]; then
-            echo "Draft PRs do not count against the limit; nothing to do."
-            exit 0
-          fi
 
-          # Live list endpoint, not the search API: search indexing lags and can miss
-          # the PR that was just opened.
-          OTHERS=$(gh pr list --repo "$REPO" --author "$AUTHOR" --state open --limit 200 \
-                     --json number,isDraft \
-                     --jq "[.[] | select(.isDraft | not) | select(.number != $PR_NUMBER)]")
+          OTHERS=$(jq --argjson pr "$PR_NUMBER" '[.[] | select(.number != $pr)]' <<<"$OPEN")
           if [ "$EVENT_ACTION" = "opened" ]; then
-            COUNT_OTHERS=$(jq "[.[] | select(.number < $PR_NUMBER)] | length" <<<"$OTHERS")
+            COUNTED=$(jq --argjson pr "$PR_NUMBER" '[.[] | select(.number < $pr)]' <<<"$OTHERS")
           else
-            COUNT_OTHERS=$(jq 'length' <<<"$OTHERS")
-          fi
-          POSITION=$((COUNT_OTHERS + 1))
-          TOTAL=$(( $(jq 'length' <<<"$OTHERS") + 1 ))
-          echo "Position $POSITION (open non-draft PRs by $AUTHOR: $TOTAL); advisory above $ADVISORY_LIMIT, close above $CLOSE_LIMIT."
-
-          if [ "$POSITION" -le "$ADVISORY_LIMIT" ]; then
-            run gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$LABEL" > /dev/null 2>&1 || true
-            echo "Within the limit."
-            exit 0
+            COUNTED=$OTHERS
           fi
 
           COMMENTS=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[].body')
@@ -154,52 +148,35 @@ jobs:
 
           # GitHub renders a single newline in a comment as a hard line break, so
           # every paragraph is one line.
-          advisory_body() {
+          total_closed_body() {
             cat <<'EOF'
-          <!-- pr-limit-notice -->
+          <!-- pr-limit-total-closed -->
           👋 Hi @{{author}}, thank you for your contribution to the project!
 
-          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open, non-draft pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label as a reminder.
-
-          This pull request stays open. Starting **{{date}}**, pull requests opened beyond your 4th will be closed automatically.
-
-          **Next steps:**
-          1. Focus with maintainers on your other open pull requests to get them reviewed and merged.
-          2. If some of them are work in progress, convert them to drafts: drafts do not count against the limit.
-
-          Thank you for helping keep the review queue healthy! 🚀
-          EOF
-          }
-
-          headsup_body() {
-            cat <<'EOF'
-          <!-- pr-limit-notice -->
-          👋 Hi @{{author}}, thank you for your contribution to the project!
-
-          To help our maintainers give thorough and timely reviews to everyone, our policy asks contributors to keep **no more than 2 open, non-draft pull requests** at a time. You currently have **{{count}}** open pull requests in this repository, so we added the `over-pr-limit` label.
-
-          **Heads up:** starting **{{date}}**, a pull request like this one, opened while you already have 4 or more open, will be closed automatically. This one stays open for now.
-
-          **Next steps:**
-          1. Focus with maintainers on your other open pull requests to get them reviewed and merged.
-          2. Convert work-in-progress pull requests to drafts: drafts do not count against the limit.
-
-          Thank you for helping keep the review queue healthy! 🚀
-          EOF
-          }
-
-          closing_body() {
-            cat <<'EOF'
-          <!-- pr-limit-closed -->
-          👋 Hi @{{author}}, thank you for your contribution to the project!
-
-          To help our maintainers give thorough and timely reviews to everyone, our policy limits contributors to **2 open, non-draft pull requests** at a time, and pull requests beyond the 4th are closed automatically. You currently have **{{count}}** open pull requests in this repository.
+          To help our maintainers give thorough and timely reviews to everyone, our policy limits contributors to **4 open pull requests**, drafts included, and pull requests opened beyond that are closed automatically. You currently have **{{count}}** open pull requests in this repository, drafts included.
 
           We have temporarily closed this pull request to keep the review queue balanced. Don't worry, your branch and commits are completely safe!
 
           **Next steps:**
-          1. Focus with maintainers on your currently open pull requests to get them reviewed and merged.
-          2. Once one of your existing pull requests is merged or closed, simply reopen this one (or comment, and we will reopen it for you).
+          1. Finish, merge or close one of your existing pull requests or drafts.
+          2. Then simply reopen this one (or comment, and we will reopen it for you).
+
+          Thank you for your understanding and for helping keep the review queue healthy! 🚀
+          EOF
+          }
+
+          ready_draft_body() {
+            cat <<'EOF'
+          <!-- pr-limit-ready-draft -->
+          👋 Hi @{{author}}, thank you for your contribution to the project!
+
+          To help our maintainers give thorough and timely reviews to everyone, our policy limits contributors to **2 pull requests ready for review** at a time. You currently have **{{count}}** open, non-draft pull requests in this repository, counting this one.
+
+          We have turned this pull request back into a draft. Nothing else changed: it stays open, and your branch and commits are untouched.
+
+          **Next steps:**
+          1. Focus with maintainers on your other ready pull requests to get them reviewed and merged.
+          2. Once one of them is merged, closed or turned into a draft, mark this one as ready for review again.
 
           Thank you for your understanding and for helping keep the review queue healthy! 🚀
           EOF
@@ -209,35 +186,47 @@ jobs:
             local text
             text=$("$1")
             text=${text//\{\{author\}\}/$AUTHOR}
-            text=${text//\{\{count\}\}/$TOTAL}
-            text=${text//\{\{date\}\}/$ENFORCE_DATE}
+            text=${text//\{\{count\}\}/$2}
             printf '%s\n' "$text"
           }
 
-          run gh label create "$LABEL" --repo "$REPO" --force --color fbca04 \
-            --description "Author has more than $ADVISORY_LIMIT open pull requests (see CONTRIBUTING.md)"
-          run gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$LABEL"
-
-          if [ "$POSITION" -gt "$CLOSE_LIMIT" ] && [ "$ENFORCE" = "true" ]; then
-            if has_marker 'pr-limit-closed'; then
-              echo "Closing notice already posted; closing without a new comment."
-            else
-              BODY=$(render closing_body)
-              run gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
+          # Total limit: only events that add an open PR change the total.
+          if [ "$EVENT_ACTION" != "ready_for_review" ]; then
+            TOTAL_POSITION=$(( $(jq 'length' <<<"$COUNTED") + 1 ))
+            TOTAL=$(( $(jq 'length' <<<"$OTHERS") + 1 ))
+            echo "Total position $TOTAL_POSITION (open PRs by $AUTHOR, drafts included: $TOTAL); limit $TOTAL_LIMIT."
+            if [ "$TOTAL_POSITION" -gt "$TOTAL_LIMIT" ]; then
+              if has_marker 'pr-limit-total-closed'; then
+                echo "Closing notice already posted; closing without a new comment."
+              else
+                run gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$(render total_closed_body "$TOTAL")"
+              fi
+              run gh pr close "$PR_NUMBER" --repo "$REPO"
+              echo "Closed: total position $TOTAL_POSITION is above $TOTAL_LIMIT."
+              exit 0
             fi
-            run gh pr close "$PR_NUMBER" --repo "$REPO"
-            echo "Closed: position $POSITION is above $CLOSE_LIMIT."
+          fi
+
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "Draft within the total limit; nothing to do."
             exit 0
           fi
 
-          if has_marker 'pr-limit-notice'; then
-            echo "Reminder already posted; skipping comment."
+          # Ready limit.
+          READY_POSITION=$(( $(jq '[.[] | select(.isDraft | not)] | length' <<<"$COUNTED") + 1 ))
+          READY=$(( $(jq '[.[] | select(.isDraft | not)] | length' <<<"$OTHERS") + 1 ))
+          echo "Ready position $READY_POSITION (open non-draft PRs by $AUTHOR: $READY); limit $READY_LIMIT."
+          if [ "$READY_POSITION" -le "$READY_LIMIT" ]; then
+            run gh api -X DELETE "repos/$REPO/issues/$PR_NUMBER/labels/$LABEL" > /dev/null 2>&1 || true
+            echo "Within both limits."
             exit 0
           fi
-          if [ "$POSITION" -gt "$CLOSE_LIMIT" ]; then
-            BODY=$(render headsup_body)
-          else
-            BODY=$(render advisory_body)
+
+          # `gh pr ready --undo` calls the convertPullRequestToDraft mutation. If the
+          # token cannot convert, fail loudly instead of falling back to closing.
+          if ! run gh pr ready "$PR_NUMBER" --repo "$REPO" --undo; then
+            echo "::error::Could not convert #$PR_NUMBER back to a draft; no comment posted."
+            exit 1
           fi
-          run gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
-          echo "Reminder posted."
+          run gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$(render ready_draft_body "$READY")"
+          echo "Converted to draft: ready position $READY_POSITION is above $READY_LIMIT."

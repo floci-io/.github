@@ -16,4 +16,4 @@
 - [ ] Tests pass locally and new behavior is covered (compatibility tests where applicable).
 - [ ] Docs updated if behavior or configuration changed.
 - [ ] I have read the [Contributing guide](https://github.com/floci-io/.github/blob/main/CONTRIBUTING.md) and agree to the [Code of Conduct](https://github.com/floci-io/.github/blob/main/CODE_OF_CONDUCT.md).
-- [ ] I have no more than 2 open, non-draft pull requests in this repository (maintainers and dependency bots are exempt).
+- [ ] I have no more than 2 open, non-draft pull requests and no more than 4 open pull requests in total (drafts included) in this repository (maintainers and dependency bots are exempt).
