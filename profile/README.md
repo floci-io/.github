@@ -70,7 +70,8 @@ them, ship them.
 
 ## Release train
 
-Stable releases ship on the **1st and 3rd Tuesday of each month**, across all four emulators.
+Stable releases ship on the **15th and the last day of each month**, across all four emulators,
+cut automatically at 00:30 US Central time.
 Between trains, the `nightly` tag on each image (`floci/floci`, `floci/floci-az`,
 `floci/floci-gcp`, `floci/floci-oci`) tracks `main`, so every merged fix is available the next
 day, and dated `nightly-mmddyyyy` tags let you pin a specific night's build.
