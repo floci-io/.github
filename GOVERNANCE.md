@@ -68,13 +68,13 @@ Each repository's own `MAINTAINERS.md` is authoritative. This table is a conveni
 | Area | Repository | Maintainers |
 |---|---|---|
 | AWS emulator | `floci` | @hectorvent, @pgermosen |
-| Azure emulator | `floci-az` | @hectorvent, @fredpena |
-| GCP emulator | `floci-gcp` | @hectorvent |
-| OCI emulator | `floci-oci` | @hectorvent, @gioandtonic |
+| Azure emulator | `floci-az` | @hectorvent |
+| GCP emulator | `floci-gcp` | @hectorvent, @avison9 |
+| OCI emulator | `floci-oci` | @hectorvent |
 | Web console | `floci-ui` | @fredpena, @hectorvent |
 | CLI | `floci-cli` | @hectorvent |
 | Testcontainers, Java | `testcontainers-floci` | @cfranzen, @hectorvent |
-| Testcontainers, .NET | `testcontainers-floci-dotnet` | @hughesjs, @hectorvent |
+| Testcontainers, .NET | `testcontainers-floci-dotnet` | @hectorvent |
 | Testcontainers, Go | `testcontainers-floci-go` | @hectorvent |
 | Testcontainers, Node | `testcontainers-floci-node` | @hectorvent |
 | Testcontainers, Python | `testcontainers-floci-python` | @hectorvent |
