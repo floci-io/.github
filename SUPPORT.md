@@ -8,7 +8,7 @@ There is no paid support tier required to use any emulated service.
 - 🗣️ **[GitHub Discussions](https://github.com/orgs/floci-io/discussions)**: questions, feature
   ideas, design tradeoffs, and proposals. Best for anything that benefits from being searchable
   later.
-- 💬 **[Slack](https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw)**:
+- 💬 **[Slack](https://floci.io/slack)**:
   real-time questions and community chat.
 - 🐛 **Issues**: for reproducible bugs and concrete compatibility gaps, open an issue on the
   relevant repository:

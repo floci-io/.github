@@ -12,7 +12,7 @@
 [![stars floci-gcp](https://img.shields.io/github/stars/floci-io/floci-gcp?style=flat&color=blue&label=stars%20floci-gcp)](https://github.com/floci-io/floci-gcp/stargazers)
 [![stars floci-oci](https://img.shields.io/github/stars/floci-io/floci-oci?style=flat&color=blue&label=stars%20floci-oci)](https://github.com/floci-io/floci-oci/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/floci-io/floci/blob/main/LICENSE)
-[![Slack](https://img.shields.io/badge/Slack-join%20the%20community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw)
+[![Slack](https://img.shields.io/badge/Slack-join%20the%20community-4A154B?logo=slack&logoColor=white)](https://floci.io/slack)
 [![Website](https://img.shields.io/badge/website-floci.io-0ea5e9)](https://floci.io)
 
 </div>
@@ -114,7 +114,7 @@ tiers, is listed in [THANKS.md](https://github.com/floci-io/.github/blob/main/TH
 
 **[Website](https://floci.io)** ·
 **[Documentation](https://floci.io)** ·
-**[Slack](https://join.slack.com/t/floci/shared_invite/zt-3tjn02s3q-A00kEjJ1cZxsg_imTfy6Cw)** ·
+**[Slack](https://floci.io/slack)** ·
 **[Discussions](https://github.com/orgs/floci-io/discussions)** ·
 **[Governance](https://github.com/floci-io/.github/blob/main/GOVERNANCE.md)** ·
 **[Trademark](https://github.com/floci-io/.github/blob/main/TRADEMARK.md)**
